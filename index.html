@@ -12,8 +12,9 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; background: #000; }
 
-    /* La escena AR ocupa toda la pantalla y queda detrás del intro */
-    a-scene { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; }
+    /* NO tocar el posicionamiento/z-index de a-scene: MindAR coloca el vídeo
+       de la cámara como fondo y el lienzo transparente encima. Forzar z-index
+       aquí tapa el vídeo con el lienzo negro (sobre todo en iOS Safari). */
 
     /* Pantalla de inicio (gesto del usuario para activar la cámara) */
     #intro {
