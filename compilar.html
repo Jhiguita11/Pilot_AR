@@ -34,7 +34,7 @@
 
     btn.addEventListener('click', async () => {
       btn.disabled = true;
-      status.textContent = 'Cargando imagen…';
+      status.textContent = 'R';
       try {
         const img = await loadImage('./escaneo.jpg');
         status.textContent = 'Compilando… (puede tardar unos segundos)';
