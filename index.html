@@ -120,6 +120,7 @@
           await sys.start();           // pide permiso de cámara y arranca el vídeo
           intro.classList.add('hidden');
           scanHint.style.display = 'flex';
+          fixIOSVideo();               // iOS: forzar muted property + play()
         };
 
         if (scene.hasLoaded) await startMindAR();
@@ -129,6 +130,27 @@
         startBtn.textContent = 'Reintentar';
       }
     });
+
+    // --- Arreglo iOS Safari ---
+    // MindAR crea el <video> con setAttribute('muted',''), que iOS NO respeta,
+    // así que bloquea la reproducción y el recuadro sale negro aunque la cámara
+    // esté activa. Forzamos la PROPIEDAD muted=true, playsinline y play().
+    function fixIOSVideo() {
+      let tries = 0;
+      const id = setInterval(() => {
+        tries++;
+        const vid = document.querySelector('a-scene ~ video, body > video, video');
+        if (vid) {
+          vid.muted = true;
+          vid.defaultMuted = true;
+          vid.setAttribute('playsinline', '');
+          vid.setAttribute('webkit-playsinline', '');
+          vid.play().catch(() => {});
+          if (vid.videoWidth > 0 || tries > 20) clearInterval(id);
+        }
+        if (tries > 30) clearInterval(id);
+      }, 300);
+    }
 
     target.addEventListener('targetFound', () => { scanHint.style.display = 'none'; reveal.emit('show'); });
     target.addEventListener('targetLost',  () => { scanHint.style.display = 'flex'; reveal.emit('hide'); });
