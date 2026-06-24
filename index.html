@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Revelación AR</title>
+
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; background: #000; }
+
+    /* Pantalla de inicio (gesto del usuario para activar la cámara) */
+    #intro {
+      position: fixed; inset: 0; z-index: 30;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 22px; text-align: center; color: #fff; padding: 32px;
+      background: radial-gradient(circle at 50% 30%, #1c2530, #05080c);
+    }
+    #intro h1 { font-size: 1.5rem; font-weight: 700; }
+    #intro p { font-size: .95rem; opacity: .8; max-width: 320px; line-height: 1.5; }
+    #intro img { width: 150px; border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+    #startBtn {
+      background: #fff; color: #111; border: 0; padding: 14px 32px;
+      border-radius: 999px; font-size: 1.05rem; font-weight: 700; cursor: pointer;
+    }
+
+    /* Indicador de "buscando" mientras no hay marcador */
+    #scanHint {
+      position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%);
+      z-index: 20; color: #fff; font-size: .9rem; padding: 10px 18px;
+      background: rgba(0,0,0,.45); border-radius: 999px; backdrop-filter: blur(6px);
+      display: none; align-items: center; gap: 10px;
+    }
+    #scanHint .dot {
+      width: 9px; height: 9px; border-radius: 50%; background: #4ade80;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    .hidden { display: none !important; }
+    a-scene { z-index: 1; }
+  </style>
+</head>
+<body>
+
+  <div id="intro">
+    <img src="./revelacion.jpg" alt="vista previa" />
+    <h1>Descubre la imagen oculta</h1>
+    <p>Pulsa empezar y apunta la cámara al boceto. La imagen real aparecerá sobre el papel.</p>
+    <button id="startBtn">Empezar</button>
+  </div>
+
+  <div id="scanHint"><span class="dot"></span> Buscando el boceto…</div>
+
+  <a-scene
+    class="hidden"
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: no; uiScanning: no; uiError: no; filterMinCF: 0.0001; filterBeta: 0.01"
+    color-space="sRGB"
+    renderer="colorManagement: true, physicallyCorrectLights"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
+    <a-assets>
+      <img id="revelacion" src="./revelacion.jpg" crossorigin="anonymous" />
+    </a-assets>
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <!-- targetIndex: 0 = primer (único) marcador en targets.mind -->
+    <a-entity id="target" mindar-image-target="targetIndex: 0">
+      <a-plane
+        id="reveal"
+        src="#revelacion"
+        position="0 0 0"
+        rotation="0 0 0"
+        width="1"
+        height="0.664"
+        material="transparent: true; opacity: 0"
+        animation__in="property: material.opacity; to: 1; dur: 600; easing: easeOutQuad; startEvents: show"
+        animation__out="property: material.opacity; to: 0; dur: 300; easing: easeOutQuad; startEvents: hide">
+      </a-plane>
+    </a-entity>
+  </a-scene>
+
+  <script>
+    const scene    = document.querySelector('a-scene');
+    const intro    = document.getElementById('intro');
+    const startBtn = document.getElementById('startBtn');
+    const scanHint = document.getElementById('scanHint');
+    const target   = document.getElementById('target');
+    const reveal   = document.getElementById('reveal');
+
+    startBtn.addEventListener('click', async () => {
+      intro.classList.add('hidden');
+      scene.classList.remove('hidden');
+
+      // Arranca MindAR cuando la escena esté lista
+      const start = () => {
+        const sys = scene.systems['mindar-image-system'];
+        sys.start();
+        scanHint.style.display = 'flex';
+      };
+      if (scene.hasLoaded) start();
+      else scene.addEventListener('loaded', start, { once: true });
+    });
+
+    // Eventos del marcador: mostrar / ocultar la revelación
+    target.addEventListener('targetFound', () => {
+      scanHint.style.display = 'none';
+      reveal.emit('show');
+    });
+    target.addEventListener('targetLost', () => {
+      scanHint.style.display = 'flex';
+      reveal.emit('hide');
+    });
+  </script>
+</body>
+</html>
